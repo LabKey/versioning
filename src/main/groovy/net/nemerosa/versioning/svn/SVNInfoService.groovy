@@ -17,7 +17,7 @@ class SVNInfoService implements SCMInfoService {
     @Override
     SCMInfo getInfo(Project project, VersioningExtension extension) {
         // Is SVN enabled?
-        boolean hasSvn = project.file('.svn').exists()
+        boolean hasSvn = project.rootProject.file('.svn').exists()
         // No SVN information
         if (!hasSvn) {
             SCMInfo.NONE
@@ -89,7 +89,7 @@ class SVNInfoService implements SCMInfoService {
         if (url ==~ /.*\/trunk$/) {
             'trunk'
         } else {
-            def m = url =~ /.*\/branches\/([^\/]+)$/
+            def m = url =~ /.*\/branches\/([^\/]+).*$/
             if (m.matches()) {
                 m.group(1)
             } else {
