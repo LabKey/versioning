@@ -3,14 +3,14 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.4.0"
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.1.1"
     }
 }
 
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
-// apply plugin: org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
-// apply plugin: 'com.jfrog.artifactory'  
+//apply plugin: org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
+apply plugin: 'com.jfrog.artifactory'
 
 repositories {
     jcenter()
@@ -37,24 +37,24 @@ publishing {
     }
 }
 
-//artifactory {
-//    contextUrl =  "${artifactory_contextUrl}"
-//    publish {
-//        repository {
-//            repoKey = "libs-release-local"
-//             username = "${artifactory_user}"
-//             password = "${artifactory_password}"
-//        }
-//        defaults {
-//            publications('mavenJava')
-//        }
-//    }
-//    resolve {
-//        repository {
-//            repoKey = "libs-release"
-//        }
-//    }
-//}
+artifactory {
+    contextUrl =  "${artifactory_contextUrl}"
+    publish {
+        repository {
+            repoKey = "libs-release-local"
+             username = "${artifactory_user}"
+             password = "${artifactory_password}"
+        }
+        defaults {
+            publications('mavenJava')
+        }
+    }
+    resolve {
+        repository {
+            repoKey = "libs-release"
+        }
+    }
+}
 
 
 /**
