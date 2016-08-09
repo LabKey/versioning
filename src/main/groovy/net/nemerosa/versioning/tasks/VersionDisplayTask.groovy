@@ -23,6 +23,7 @@ class VersionDisplayTask extends DefaultTask {
             println "[version] No version can be computed from the SCM."
         } else {
             println "[version] scm        = ${info.scm}"
+            println "[version] URL        = ${info.url}"
             println "[version] branch     = ${info.branch}"
             println "[version] branchType = ${info.branchType}"
             println "[version] branchId   = ${info.branchId}"

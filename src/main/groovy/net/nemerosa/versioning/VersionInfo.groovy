@@ -11,6 +11,7 @@ class VersionInfo {
     static final VersionInfo NONE = new VersionInfo()
 
     String scm = 'n/a'
+    String url = ''
     String branch = ''
     String branchType = ''
     String branchId = ''

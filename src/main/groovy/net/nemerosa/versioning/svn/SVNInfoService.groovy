@@ -48,6 +48,7 @@ class SVNInfoService implements SCMInfoService {
             String revision = info.committedRevision.number as String
             // OK
             new SCMInfo(
+                    info.URL as String,
                     branch,
                     revision,
                     revision,

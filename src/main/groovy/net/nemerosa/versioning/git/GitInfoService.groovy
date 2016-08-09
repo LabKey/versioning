@@ -5,6 +5,7 @@ import net.nemerosa.versioning.SCMInfoService
 import net.nemerosa.versioning.VersioningExtension
 import org.ajoberstar.grgit.Commit
 import org.ajoberstar.grgit.Grgit
+import org.ajoberstar.grgit.Remote
 import org.ajoberstar.grgit.Status
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -70,8 +71,17 @@ class GitInfoService implements SCMInfoService {
                 tag = null
             }
 
+            String url
+            List<Remote> remotes = grgit.remote.list()
+            if (remotes) {
+                url = remotes.get(0).url
+            } else {
+                url = null
+            }
+
             // Returns the information
             new SCMInfo(
+                    url: url,
                     branch: branch,
                     commit: commit,
                     abbreviated: abbreviated,

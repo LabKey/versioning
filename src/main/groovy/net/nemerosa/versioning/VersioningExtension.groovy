@@ -46,7 +46,7 @@ class VersioningExtension {
     /**
      * Version SCM - git by default
      */
-    String scm = 'git'
+    String scm = ''
 
     /**
      * Fetch the branch from environment variable if available.
@@ -168,6 +168,9 @@ class VersioningExtension {
      */
     VersionInfo computeInfo() {
 
+        if (!scm) {
+            scm = resolveSCM(project)
+        }
         // Gets the SCM info service
         SCMInfoService scmInfoService = getSCMInfoService(scm)
         // Gets the version source
@@ -229,6 +232,7 @@ class VersioningExtension {
         // OK
         new VersionInfo(
                 scm: scm,
+                url: scmInfo.url,
                 branch: scmInfo.branch,
                 branchType: versionReleaseType,
                 branchId: versionBranchId,
@@ -280,5 +284,9 @@ class VersioningExtension {
         } else {
             throw new GradleException("Unknown SCM info service: ${type}")
         }
+    }
+
+    private static String resolveSCM(Project project) {
+        return project.file('.git').exists() ? 'git' : 'svn'
     }
 }

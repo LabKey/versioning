@@ -7,6 +7,7 @@ class SCMInfo {
 
     static final SCMInfo NONE = new SCMInfo()
 
+    String url
     String branch
     String commit
     String abbreviated
