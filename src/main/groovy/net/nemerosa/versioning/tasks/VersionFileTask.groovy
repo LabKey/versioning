@@ -36,6 +36,7 @@ class VersionFileTask extends DefaultTask {
         // Writes the info
         file.text = """\
 ${prefix}BUILD=${info.build}
+${prefix}URL=${info.url}
 ${prefix}BRANCH=${info.branch}
 ${prefix}BASE=${info.base}
 ${prefix}BRANCHID=${info.branchId}
