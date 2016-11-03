@@ -9,7 +9,6 @@ buildscript {
 
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
-//apply plugin: org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
 apply plugin: 'com.jfrog.artifactory'
 
 repositories {
@@ -26,15 +25,16 @@ dependencies {
     compile 'apache-lang:commons-lang:2.1'
 }
 
+project.version = "1.0-SNAPSHOT"
+
 /**
  * Plug-in publication
  */
 publishing {
     publications {
         mavenJava (MavenPublication) {
-            groupId 'net.nemerosa'
+            groupId 'org.labkey'
             artifactId 'versioning'
-            version '2.2'
             from components.java
         }
     }
@@ -46,17 +46,20 @@ if (project.hasProperty('artifactory_contextUrl') && project.hasProperty('artifa
         contextUrl = "${artifactory_contextUrl}"
         publish {
             repository {
-                repoKey = "libs-release-local"
+                repoKey = project.version.endsWith('-SNAPSHOT') ? 'libs-snapshot-local' : "libs-release-local"
                 username = "${artifactory_user}"
                 password = "${artifactory_password}"
+                maven = true
             }
             defaults {
-                publications('mavenJava')
+                publications ('mavenJava')
+                publishPom = true
+                publishIvy = false
             }
         }
         resolve {
             repository {
-                repoKey = "libs-release"
+                repoKey = project.version.endsWith('-SNAPSHOT') ? 'libs-snapshot-local' : "libs-release-local"
             }
         }
     }
