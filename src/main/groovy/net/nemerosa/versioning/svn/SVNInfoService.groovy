@@ -23,38 +23,56 @@ class SVNInfoService implements SCMInfoService {
             SCMInfo.NONE
         } else {
             // Gets the client manager
-            def clientManager = getClientManager(extension)
-            // Gets the SVN information
-            SVNInfo info = clientManager.getWCClient().doInfo(
-                    project.projectDir,
-                    SVNRevision.HEAD
-            )
+            def clientManager = getClientManager(project, extension)
+            try
+            {
+                // Gets the SVN information
+                SVNInfo info = clientManager.getWCClient().doInfo(
+                        project.projectDir,
+                        SVNRevision.HEAD
+                )
 
-            // Check passed in environment variable list
-            String branch = null
-            for (ev in extension.branchEnv) {
-                if (System.env[ev] != null) {
-                    branch = System.env[ev]
-                    break
+                // Check passed in environment variable list
+                String branch = null
+                for (ev in extension.branchEnv) {
+                    if (System.env[ev] != null) {
+                        branch = System.env[ev]
+                        break
+                    }
                 }
-            }
-            // Branch parsing from URL
-            if (branch == null) {
-                String url = info.URL as String
-                branch = parseBranch(url)
-            }
+                // Branch parsing from URL
+                if (branch == null) {
+                    String url = info.URL as String
+                    branch = parseBranch(url)
+                }
 
-            // Revision
-            String revision = info.committedRevision.number as String
-            // OK
-            new SCMInfo(
-                    info.URL as String,
-                    branch,
-                    revision,
-                    revision,
-                    null,
-                    isWorkingCopyDirty(project.projectDir, clientManager)
-            )
+                // Revision
+                String revision = info.committedRevision.number as String
+                // OK
+                new SCMInfo(
+                        info.URL as String,
+                        branch,
+                        revision,
+                        revision,
+                        null,
+                        isWorkingCopyDirty(project.projectDir, clientManager)
+                )
+            }
+            catch (SVNException e)
+            {
+                if (e.getMessage().matches(".*The node.*was not found.*"))
+                    return new SCMInfo(
+                            "No VCS",
+                            "none",
+                            "none",
+                            "none",
+                            null,
+                            false
+                    )
+                else
+                    throw e
+
+            }
         }
     }
 
@@ -87,7 +105,7 @@ class SVNInfoService implements SCMInfoService {
     }
 
     static String parseBranch(String url) {
-        if (url ==~ /.*\/trunk$/) {
+        if (url ==~ /.*\/trunk(\/)?.*/) {
             'trunk'
         } else {
             def m = url =~ /.*\/branches\/([^\/]+).*$/
@@ -102,7 +120,7 @@ class SVNInfoService implements SCMInfoService {
     @Override
     List<String> getBaseTags(Project project, VersioningExtension extension, String base) {
         // Gets the client manager
-        def clientManager = getClientManager(extension)
+        def clientManager = getClientManager(project, extension)
         // Gets the SVN information
         SVNInfo info = clientManager.getWCClient().doInfo(
                 project.projectDir,
@@ -121,7 +139,7 @@ class SVNInfoService implements SCMInfoService {
         }
         // Gets the list of tags
         String tagsUrl = "${baseUrl}/tags"
-        println "[version] Getting list of tags from ${tagsUrl}..."
+        project.logger.info("${project.path} [versioning] Getting list of tags from ${tagsUrl}...")
         // Gets the list
         List<SVNDirEntry> entries = []
         try {
@@ -168,18 +186,18 @@ class SVNInfoService implements SCMInfoService {
     /**
      * Creates the client manager
      */
-    protected static SVNClientManager getClientManager(VersioningExtension extension) {
+    protected static SVNClientManager getClientManager(Project project, VersioningExtension extension) {
         def clientManager = SVNClientManager.newInstance()
         if (extension.user && extension.password) {
-            println "[version] Authenticating with ${extension.user}"
+            project.logger.info("${project.path} [versioning] Authenticating with ${extension.user}");
             clientManager.setAuthenticationManager(BasicAuthenticationManager.newInstance(extension.user, extension.password.toCharArray()));
             // The BasicAuthenticationManager trusts the certificates by default
         } else if (extension.trustServerCert) {
-            println "[version] Trusting certificate by default"
-            println "[version] WARNING The `trustServerCert` is now deprecated - and should not be used any longer."
+            project.logger.info("${project.path} [versioning] Trusting certificate by default");
+            project.logger.info("[versioning] WARNING The `trustServerCert` is now deprecated - and should not be used any longer.");
             clientManager.setAuthenticationManager(BasicAuthenticationManager.newInstance(new SVNAuthentication[0]));
         } else {
-            println "[version] Using default SVN configuration"
+            project.logger.info("${project.path} [versioning] Using default SVN configuration");
             clientManager.setAuthenticationManager(SVNWCUtil.createDefaultAuthenticationManager())
         }
         return clientManager
