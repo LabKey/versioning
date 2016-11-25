@@ -33,7 +33,7 @@ project.version = "1.0-SNAPSHOT"
 publishing {
     publications {
         mavenJava (MavenPublication) {
-            groupId 'org.labkey'
+            groupId 'org.labkey.build'
             artifactId 'versioning'
             from components.java
         }
