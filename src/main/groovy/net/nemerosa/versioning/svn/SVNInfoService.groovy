@@ -29,7 +29,7 @@ class SVNInfoService implements SCMInfoService {
                 // Gets the SVN information
                 SVNInfo info = clientManager.getWCClient().doInfo(
                         project.projectDir,
-                        SVNRevision.HEAD
+                        SVNRevision.WORKING
                 )
 
                 // Check passed in environment variable list

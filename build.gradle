@@ -25,7 +25,7 @@ dependencies {
     compile 'apache-lang:commons-lang:2.1'
 }
 
-project.version = "1.0"
+project.version = "1.0.1-SNAPSHOT"
 
 /**
  * Plug-in publication
