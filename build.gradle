@@ -7,6 +7,8 @@ buildscript {
     }
 }
 
+version="1.0.1"
+
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.artifactory'
@@ -25,7 +27,6 @@ dependencies {
     compile 'apache-lang:commons-lang:2.1'
 }
 
-project.version = "1.0.1-SNAPSHOT"
 
 /**
  * Plug-in publication
