@@ -24,7 +24,7 @@ dependencies {
     compile 'commons-lang:commons-lang:2.6'
 }
 
-project.version = "1.0.2-SNAPSHOT"
+project.version = "1.0.2"
 
 /**
  * Plug-in publication
@@ -46,7 +46,7 @@ if (project.hasProperty('doPublishing') && project.hasProperty('artifactory_cont
         contextUrl = "${artifactory_contextUrl}"
         publish {
             repository {
-                repoKey = project.version.endsWith('-SNAPSHOT') ? 'plugins-snapshot-local' : "plugins-release"
+                repoKey = project.version.endsWith('-SNAPSHOT') ? 'plugins-snapshot-local' : "plugins-release-local"
                 username = "${artifactory_user}"
                 password = "${artifactory_password}"
                 maven = true
