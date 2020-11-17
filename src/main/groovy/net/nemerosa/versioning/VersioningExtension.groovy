@@ -1,10 +1,13 @@
 package net.nemerosa.versioning
 
+
 import net.nemerosa.versioning.git.GitInfoService
 import net.nemerosa.versioning.support.DirtyException
 import net.nemerosa.versioning.svn.SVNInfoService
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+
+import java.util.regex.Matcher
 
 class VersioningExtension {
 
@@ -35,18 +38,26 @@ class VersioningExtension {
      * Registry of release modes
      */
     private static final Map<String, Closure<String>> RELEASE_MODES = [
-            tag : { nextTag, lastTag, currentTag, extension ->
+            tag     : { nextTag, lastTag, currentTag, extension ->
                 nextTag
             },
             snapshot: { nextTag, lastTag, currentTag, extension ->
-                currentTag ?: "${nextTag}${extension.snapshot}"
+                extension.releaseBuild && currentTag ? currentTag : "${nextTag}${extension.snapshot}"
             },
     ]
 
     /**
      * Version SCM - git by default
      */
-    String scm = ''
+    String scm = 'git'
+
+    /**
+     * Allow setting the root git repo directory for non conventional git/gradle setups.
+     * This is the path to the root directory that contains the .git folder. This
+     * is used to validate if the current project is a git repository.
+     *
+     */
+    String gitRepoRootDir = null
 
     /**
      * Fetch the branch from environment variable if available.
@@ -54,7 +65,7 @@ class VersioningExtension {
      * By default, the environment is not taken into account, in order to be backward compatible
      * with existing build systems.
      */
-    List branchEnv = []
+    List<String> branchEnv = []
 
     /**
      * Getting the version type from a branch. Default: getting the part before the first "/" (or a second
@@ -92,6 +103,11 @@ class VersioningExtension {
     def releaseMode = 'tag'
 
     /**
+     * True if it's release build. Default is true, and branch should be in releases-set.
+     */
+    def releaseBuild = true
+
+    /**
      * Default Snapshot extension
      */
     String snapshot = '-SNAPSHOT'
@@ -118,7 +134,7 @@ class VersioningExtension {
     /**
      * If set to <code>true</code>, no warning will be printed in case the workspace is dirty.
      */
-    boolean noWarningOnDirty = false;
+    boolean noWarningOnDirty = false
 
     /**
      * Credentials (for SVN only)
@@ -129,6 +145,83 @@ class VersioningExtension {
      * Credentials (for SVN only)
      */
     String password = ''
+
+    /**
+     * Pattern used to match when looking for the last tag. By default, checks for any
+     * tag having a last part being numeric. At least one numeric grouping
+     * expression is required. The first one will be used to reverse order
+     * the tags in Git.
+     */
+    String lastTagPattern = /(\d+)$/
+
+    /**
+     * Digit precision for computing version code.
+     *
+     * With a precision of 2, 1.25.3 will become 12503.
+     * With a precision of 3, 1.25.3 will become 1250003.
+     */
+    int precision = 2
+
+    /**
+     * Default number to use when no version number can be extracted from version string.
+     */
+    int defaultNumber = 0
+
+    /**
+     * Closure that takes major, minor and patch integers in parameter and is computing versionCode number.
+     */
+    Closure<Integer> computeVersionCode = { int major, int minor, int patch ->
+        return (major * 10**(2 * precision)) + (minor * 10**precision) + patch
+    }
+
+    /**
+     * Compute version number
+     *
+     * Closure that compute VersionNumber from <i>scmInfo</i>, <i>versionReleaseType</i>, <i>versionBranchId</i>,
+     * <i>versionFull</i>, <i>versionBase</i> and <i>versionDisplay</i>
+     *
+     * By default it tries to find this pattern in display : '([0-9]+)[.]([0-9]+)[.]([0-9]+)(.*)$'.
+     * Version code is computed with this algo : code = group(1) * 10^2precision + group(2) * 10^precision + group(3)
+     *
+     * Example :
+     *
+     * - with precision = 2
+     *
+     * 1.2.3 -> 10203
+     * 10.55.62 -> 105562
+     * 20.3.2 -> 200302
+     *
+     * - with precision = 3
+     *
+     * 1.2.3 -> 1002003
+     * 10.55.62 -> 100055062
+     * 20.3.2 -> 20003002
+     **/
+    Closure<VersionNumber> parseVersionNumber = { SCMInfo scmInfo, String versionReleaseType, String versionBranchId,
+                                                  String versionFull, String versionBase, String versionDisplay ->
+        // We are specifying all these parameters because we want to leave the choice to the developer
+        // to use data that's right to him
+        // Regex explained :
+        // - 1st group one digit that is major version
+        // - 2nd group one digit that is minor version
+        // - It can be followed by a qualifier name
+        // - 3rd group and last part is one digit that is patch version
+        Matcher m = (versionDisplay =~ '([0-9]+)[.]([0-9]+).*[.]([0-9]+)(.*)$')
+        if (m.find()) {
+            try {
+                int n1 = Integer.parseInt(m.group(1))
+                int n2 = Integer.parseInt(m.group(2))
+                int n3 = Integer.parseInt(m.group(3))
+                String q = m.group(4) ?: ''
+                return new VersionNumber(n1, n2, n3, q, computeVersionCode(n1, n2, n3).intValue(), versionDisplay)
+            } catch (Exception ignore) {
+                // Should never go here
+                return new VersionNumber(0, 0, 0, '', defaultNumber, versionDisplay)
+            }
+        } else {
+            return new VersionNumber(0, 0, 0, '', defaultNumber, versionDisplay)
+        }
+    }
 
     /**
      * Certificate - accept SSL server certificates from unknown certificate authorities (for SVN only)
@@ -153,9 +246,10 @@ class VersioningExtension {
     VersioningExtension(Project project) {
         this.project = project
     }
-/**
- * Gets the computed version information
- */
+
+    /**
+     * Gets the computed version information
+     */
     VersionInfo getInfo() {
         if (!info) {
             info = computeInfo()
@@ -168,9 +262,6 @@ class VersioningExtension {
      */
     VersionInfo computeInfo() {
 
-        if (!scm) {
-            scm = resolveSCM(project)
-        }
         // Gets the SCM info service
         SCMInfoService scmInfoService = getSCMInfoService(scm)
         // Gets the version source
@@ -222,13 +313,15 @@ class VersioningExtension {
                 throw new DirtyException()
             } else {
                 if (!noWarningOnDirty) {
-                    project.logger.info("${project.path} the working copy has unstaged or uncommitted changes.");
+                    project.getLogger().warn("[versioning] WARNING - the working copy has unstaged or uncommitted changes.")
                 }
                 versionDisplay = dirty(versionDisplay)
                 versionFull = dirty(versionFull)
             }
         }
 
+        VersionNumber versionNumber = parseVersionNumber(
+                scmInfo, versionReleaseType, versionBranchId, versionFull, versionBase, versionDisplay)
         // OK
         new VersionInfo(
                 scm: scm,
@@ -242,39 +335,57 @@ class VersioningExtension {
                 commit: scmInfo.commit,
                 build: scmInfo.abbreviated,
                 tag: scmInfo.tag,
+                lastTag: scmInfo.lastTag,
                 dirty: scmInfo.dirty,
+                shallow: scmInfo.shallow,
+                versionNumber: versionNumber,
         )
     }
 
     private String getDisplayVersion(SCMInfo scmInfo, ReleaseInfo releaseInfo, List<String> baseTags) {
         String currentTag = scmInfo.tag
-        String lastTag
-        String nextTag
-        if (baseTags.empty) {
-            lastTag = ''
-            nextTag = "${releaseInfo.base}.0"
-        } else {
-            lastTag = baseTags[0].trim()
-            def lastNumber = (lastTag =~ /${releaseInfo.base}\.(\d+)/)[0][1] as int
-            def newNumber = lastNumber + 1
-            nextTag = "${releaseInfo.base}.${newNumber}"
-        }
-        Closure<String> mode
-        if (releaseMode instanceof String) {
-            mode = RELEASE_MODES[releaseMode]
-            if (!mode) {
-                throw new GradleException("${releaseMode} is not a valid release mode.")
+        if (scmInfo.shallow) {
+            // In case the repository has no history (shallow clone or check out), the last
+            // tags cannot be get and the display version cannot be computed correctly.
+            if (releaseBuild && currentTag) {
+                // The only special case is when the HEAD commit is exactly on a tag and we can use it
+                return currentTag
+            } else {
+                // In any other case, we can only start from the base information
+                // and add a snapshot information
+                return "${releaseInfo.base}${snapshot}"
             }
-        } else if (releaseMode instanceof Closure) {
-            mode = releaseMode as Closure
         } else {
-            throw new GradleException("The `releaseMode` must be a registered default mode or a Closure.")
+            String lastTag
+            String nextTag
+            //FIXME remove this log after debugging
+            println "Base tags : $baseTags"
+            if (baseTags.empty) {
+                lastTag = ''
+                nextTag = "${releaseInfo.base}.0"
+            } else {
+                lastTag = baseTags[0].trim()
+                def lastNumber = (lastTag =~ /${releaseInfo.base}\.(\d+)/)[0][1] as int
+                def newNumber = lastNumber + 1
+                nextTag = "${releaseInfo.base}.${newNumber}"
+            }
+            Closure<String> mode
+            if (releaseMode instanceof String) {
+                mode = RELEASE_MODES[releaseMode]
+                if (!mode) {
+                    throw new GradleException("${releaseMode} is not a valid release mode.")
+                }
+            } else if (releaseMode instanceof Closure) {
+                mode = releaseMode as Closure
+            } else {
+                throw new GradleException("The `releaseMode` must be a registered default mode or a Closure.")
+            }
+            return mode(nextTag, lastTag, currentTag, this)
         }
-        return mode(nextTag, lastTag, currentTag, this)
     }
 
-    public static String normalise(String value) {
-        value.replaceAll(/[^A-Za-z0-9\.\-_]/, '-')
+    static String normalise(String value) {
+        value.replaceAll(/[^A-Za-z0-9.\-_]/, '-')
     }
 
     private static SCMInfoService getSCMInfoService(String type) {
@@ -284,9 +395,5 @@ class VersioningExtension {
         } else {
             throw new GradleException("Unknown SCM info service: ${type}")
         }
-    }
-
-    private static String resolveSCM(Project project) {
-        return project.file('.git').exists() ? 'git' : 'svn'
     }
 }

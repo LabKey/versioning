@@ -42,11 +42,18 @@ ${prefix}BASE=${info.base}
 ${prefix}BRANCHID=${info.branchId}
 ${prefix}BRANCHTYPE=${info.branchType}
 ${prefix}COMMIT=${info.commit}
+${prefix}GRADLE=${project.version == 'unspecified' ? '' : project.version}
 ${prefix}DISPLAY=${info.display}
 ${prefix}FULL=${info.full}
 ${prefix}SCM=${info.scm}
 ${prefix}TAG=${info.tag ?: ''}
+${prefix}LAST_TAG=${info.lastTag ?: ''}
 ${prefix}DIRTY=${info.dirty}
+${prefix}VERSIONCODE=${info.versionNumber.versionCode}
+${prefix}MAJOR=${info.versionNumber.major}
+${prefix}MINOR=${info.versionNumber.minor}
+${prefix}PATCH=${info.versionNumber.patch}
+${prefix}QUALIFIER=${info.versionNumber.qualifier}
 """
     }
 

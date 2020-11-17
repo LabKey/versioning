@@ -3,7 +3,6 @@ package net.nemerosa.versioning.git
 import net.nemerosa.versioning.ReleaseInfo
 import net.nemerosa.versioning.SCMInfo
 import net.nemerosa.versioning.VersionInfo
-import net.nemerosa.versioning.VersionNumber
 import net.nemerosa.versioning.VersioningPlugin
 import net.nemerosa.versioning.support.DirtyException
 import net.nemerosa.versioning.tasks.VersionDisplayTask
@@ -12,15 +11,16 @@ import org.gradle.api.DefaultTask
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
-import java.util.regex.Matcher
-
-class GitVersionTest {
+class GitVersionReleaseBuildTrueTest {
 
     @Test
     void 'Git not present'() {
         def wd = File.createTempDir('git', '')
         def project = ProjectBuilder.builder().withProjectDir(wd).build()
         new VersioningPlugin().apply(project)
+        project.versioning {
+            releaseBuild = true
+        }
         VersionInfo info = project.versioning.info as VersionInfo
         assert info != null
         assert info == VersionInfo.NONE
@@ -52,6 +52,9 @@ class GitVersionTest {
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -101,6 +104,9 @@ class GitVersionTest {
 
                 def project = ProjectBuilder.builder().withProjectDir(detached).build()
                 new VersioningPlugin().apply(project)
+                project.versioning {
+                    releaseBuild = true
+                }
                 VersionInfo info = project.versioning.info as VersionInfo
                 assert info != null
                 assert info.build == commit3Abbreviated
@@ -145,6 +151,9 @@ class GitVersionTest {
             subdir.mkdirs()
             def subproject = ProjectBuilder.builder().withParent(project).withProjectDir(subdir).build()
             new VersioningPlugin().apply(subproject)
+            subproject.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = subproject.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -187,6 +196,9 @@ class GitVersionTest {
 
                 def project = ProjectBuilder.builder().withProjectDir(detached).build()
                 new VersioningPlugin().apply(project)
+                project.versioning {
+                    releaseBuild = true
+                }
                 VersionInfo info = project.versioning.info as VersionInfo
                 assert info != null
                 assert info.build == headAbbreviated
@@ -222,6 +234,9 @@ class GitVersionTest {
             }
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             def task = project.tasks.getByName('versionDisplay') as VersionDisplayTask
             task.execute()
 
@@ -243,6 +258,9 @@ class GitVersionTest {
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             def task = project.tasks.getByName('versionFile') as DefaultTask
             task.execute()
 
@@ -275,51 +293,6 @@ VERSION_QUALIFIER=
     }
 
     @Test
-    void 'Git version file - project version'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..4).each { commit it }
-            }
-            def head = repo.commitLookup('Commit 4')
-            def headAbbreviated = repo.commitLookup('Commit 4', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            project.version = '0.0.1'
-            new VersioningPlugin().apply(project)
-            def task = project.tasks.getByName('versionFile') as DefaultTask
-            task.execute()
-
-            // Checks the file
-            def file = new File(project.buildDir, 'version.properties')
-            assert file.exists(): "File ${file} must exist."
-            assert file.text == """\
-VERSION_BUILD=${headAbbreviated}
-VERSION_BRANCH=master
-VERSION_BASE=\n\
-VERSION_BRANCHID=master
-VERSION_BRANCHTYPE=master
-VERSION_COMMIT=${head}
-VERSION_GRADLE=0.0.1
-VERSION_DISPLAY=master-${headAbbreviated}
-VERSION_FULL=master-${headAbbreviated}
-VERSION_SCM=git
-VERSION_TAG=
-VERSION_LAST_TAG=
-VERSION_DIRTY=false
-VERSION_VERSIONCODE=0
-VERSION_MAJOR=0
-VERSION_MINOR=0
-VERSION_PATCH=0
-VERSION_QUALIFIER=
-""" as String
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
     void 'Git version file - custom prefix'() {
         GitRepo repo = new GitRepo()
         try {
@@ -332,6 +305,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             project.versionFile {
                 prefix = 'CUSTOM_'
             }
@@ -379,6 +355,9 @@ CUSTOM_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             project.versionFile {
                 file = new File(repo.dir, '.version')
             }
@@ -428,6 +407,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -464,6 +446,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 displayMode = 'full'
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -502,6 +485,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 displayMode = 'snapshot'
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -540,6 +524,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 displayMode = 'snapshot'
                 snapshot = '.DEV'
             }
@@ -579,6 +564,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 displayMode = 'base'
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -617,6 +603,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 displayMode = { branchType, branchId, base, build, full, extension ->
                     "${base}-${build}-SNAPSHOT"
                 }
@@ -656,6 +643,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -692,6 +682,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -729,6 +722,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -769,6 +765,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
 
             assert info != null
@@ -784,47 +783,6 @@ VERSION_QUALIFIER=
             assert info.tag == null
             assert !info.dirty
             assert info.versionNumber.versionCode == 30002
-
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
-    void 'Git release branch: when retrieving last tag chronological order of tags must be taken into account'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..4).each { commit it }
-                branch 'release/1.3'
-                commit 5
-                tag '1.2.16'
-                sleep 1000
-                commit 6
-                tag '1.3.11'
-                commit 7
-            }
-            def head = repo.commitLookup('Commit 7')
-            def headAbbreviated = repo.commitLookup('Commit 7', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            VersionInfo info = project.versioning.info as VersionInfo
-
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'release/1.3'
-            assert info.base == '1.3'
-            assert info.branchId == 'release-1.3'
-            assert info.branchType == 'release'
-            assert info.commit == head
-            assert info.display == '1.3.12'
-            assert info.full == "release-1.3-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == null
-            assert !info.dirty
-            assert info.versionNumber.versionCode == 10312
 
         } finally {
             repo.close()
@@ -851,6 +809,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
 
             assert info != null
@@ -892,6 +853,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
 
             assert info != null
@@ -934,6 +898,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -971,6 +938,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -1007,6 +977,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = 'snapshot'
             }
 
@@ -1045,6 +1016,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = 'snapshot'
                 snapshot = '-DEV'
             }
@@ -1083,6 +1055,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = { nextTag, lastTag, currentTag, extension -> "${nextTag}-PREVIEW" }
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1122,6 +1095,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = 'snapshot'
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1162,6 +1136,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = 'snapshot'
                 snapshot = '-DEV'
             }
@@ -1203,6 +1178,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = { nextTag, lastTag, currentTag, extension -> "${nextTag}-PREVIEW" }
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1243,6 +1219,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = 'snapshot'
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1283,6 +1260,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = 'snapshot'
                 snapshot = '-DEV'
             }
@@ -1324,6 +1302,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseMode = { nextTag, lastTag, currentTag, extension -> "${nextTag}-PREVIEW" }
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1364,6 +1343,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -1402,6 +1384,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -1443,6 +1428,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -1482,6 +1470,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 dirtySuffix = '-dev'
                 noWarningOnDirty = true
             }
@@ -1524,6 +1513,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -1565,6 +1557,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 dirtySuffix = '-DIRTY'
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1613,6 +1606,9 @@ VERSION_QUALIFIER=
 
                 def project = ProjectBuilder.builder().withProjectDir(detached).build()
                 new VersioningPlugin().apply(project)
+                project.versioning {
+                    releaseBuild = true
+                }
                 VersionInfo info = project.versioning.info as VersionInfo
                 assert info != null
                 assert info.build == headAbbreviated
@@ -1655,6 +1651,9 @@ VERSION_QUALIFIER=
 
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
+            project.versioning {
+                releaseBuild = true
+            }
             VersionInfo info = project.versioning.info as VersionInfo
             assert info != null
             assert info.build == headAbbreviated
@@ -1701,6 +1700,9 @@ VERSION_QUALIFIER=
 
                 def project = ProjectBuilder.builder().withProjectDir(detached).build()
                 new VersioningPlugin().apply(project)
+                project.versioning {
+                    releaseBuild = true
+                }
                 VersionInfo info = project.versioning.info as VersionInfo
                 assert info != null
                 assert info.build == headAbbreviated
@@ -1747,10 +1749,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
-                displayMode = 'full'
-                releaseMode = 'tag'
-            }
-            project.versioning {
+                releaseBuild = true
                 dirty = { version -> "${version}-DONOTUSE" }
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1788,6 +1787,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 releaseParser = { SCMInfo scmInfo, separator = '/' ->
                     List<String> part = scmInfo.tag.split('/') + ''
                     new ReleaseInfo(type: part[0], base: part[1])
@@ -1834,6 +1834,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 dirtyFailOnReleases = true
             }
             project.versioning.info
@@ -1862,6 +1863,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 branchEnv << 'GIT_TEST_BRANCH'
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1903,6 +1905,7 @@ VERSION_QUALIFIER=
             def project = ProjectBuilder.builder().withProjectDir(projectDir).build()
             new VersioningPlugin().apply(project)
             project.versioning {
+                releaseBuild = true
                 gitRepoRootDir = repo.dir.absolutePath
             }
             VersionInfo info = project.versioning.info as VersionInfo
@@ -1920,269 +1923,6 @@ VERSION_QUALIFIER=
             assert !info.dirty
             assert !info.shallow
             assert info.versionNumber.versionCode == 20003
-
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
-    void 'Git master branch last tag'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..4).each { commit it }
-                tag '2.0.2'
-                (5..6).each { commit it }
-            }
-            def head = repo.commitLookup('Commit 6')
-            def headAbbreviated = repo.commitLookup('Commit 6', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            VersionInfo info = project.versioning.info as VersionInfo
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'master'
-            assert info.base == ''
-            assert info.branchId == 'master'
-            assert info.branchType == 'master'
-            assert info.commit == head
-            assert info.display == "master-${headAbbreviated}" as String
-            assert info.full == "master-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == null
-            assert info.lastTag == '2.0.2'
-            assert !info.dirty
-
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
-    void 'Git master branch current last tag'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..6).each { commit it }
-                tag '2.0.2'
-            }
-            def head = repo.commitLookup('Commit 6')
-            def headAbbreviated = repo.commitLookup('Commit 6', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            VersionInfo info = project.versioning.info as VersionInfo
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'master'
-            assert info.base == ''
-            assert info.branchId == 'master'
-            assert info.branchType == 'master'
-            assert info.commit == head
-            assert info.display == "master-${headAbbreviated}" as String
-            assert info.full == "master-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == '2.0.2'
-            assert info.lastTag == '2.0.2'
-            assert !info.dirty
-
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
-    void 'Git master branch no last tag'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..6).each { commit it }
-            }
-            def head = repo.commitLookup('Commit 6')
-            def headAbbreviated = repo.commitLookup('Commit 6', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            VersionInfo info = project.versioning.info as VersionInfo
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'master'
-            assert info.base == ''
-            assert info.branchId == 'master'
-            assert info.branchType == 'master'
-            assert info.commit == head
-            assert info.display == "master-${headAbbreviated}" as String
-            assert info.full == "master-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == null
-            assert info.lastTag == null
-            assert !info.dirty
-
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
-    void 'Git master branch last tag with no match for digit only'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..4).each { commit it }
-                tag '2.0.2'
-                (5..6).each { commit it }
-            }
-            def head = repo.commitLookup('Commit 6')
-            def headAbbreviated = repo.commitLookup('Commit 6', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            project.versioning {
-                lastTagPattern = /^(\d+)$/
-            }
-            VersionInfo info = project.versioning.info as VersionInfo
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'master'
-            assert info.base == ''
-            assert info.branchId == 'master'
-            assert info.branchType == 'master'
-            assert info.commit == head
-            assert info.display == "master-${headAbbreviated}" as String
-            assert info.full == "master-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == null
-            assert info.lastTag == null
-            assert !info.dirty
-
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
-    void 'Git master branch last tag with match for digit only'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..4).each { commit it }
-                tag '21'
-                (5..6).each { commit it }
-                tag '2.0.2'
-            }
-            def head = repo.commitLookup('Commit 6')
-            def headAbbreviated = repo.commitLookup('Commit 6', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            project.versioning {
-                lastTagPattern = /^(\d+)$/
-            }
-            VersionInfo info = project.versioning.info as VersionInfo
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'master'
-            assert info.base == ''
-            assert info.branchId == 'master'
-            assert info.branchType == 'master'
-            assert info.commit == head
-            assert info.display == "master-${headAbbreviated}" as String
-            assert info.full == "master-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == '2.0.2'
-            assert info.lastTag == '21'
-            assert !info.dirty
-
-        } finally {
-            repo.close()
-        }
-    }
-
-    @Test
-    void 'Git release branch: with precision = 3'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..4).each { commit it }
-                branch 'release/2.0'
-                commit 5
-                tag '2.0.10'
-                commit 6
-            }
-            def head = repo.commitLookup('Commit 6')
-            def headAbbreviated = repo.commitLookup('Commit 6', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            project.versioning {
-                precision = 3
-            }
-            VersionInfo info = project.versioning.info as VersionInfo
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'release/2.0'
-            assert info.base == '2.0'
-            assert info.branchId == 'release-2.0'
-            assert info.branchType == 'release'
-            assert info.commit == head
-            assert info.display == '2.0.11'
-            assert info.full == "release-2.0-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == null
-            assert !info.dirty
-            assert info.versionNumber.versionCode == 2000011
-
-        } finally {
-            repo.close()
-        }
-    }
-
-
-    @Test
-    void 'Git release branch with custom versionNumber computing'() {
-        GitRepo repo = new GitRepo()
-        try {
-            // Git initialisation
-            repo.with {
-                (1..4).each { commit it }
-                branch 'release/2.0'
-                commit 5
-                tag '2.0.10'
-            }
-            def head = repo.commitLookup('Commit 5')
-            def headAbbreviated = repo.commitLookup('Commit 5', true)
-
-            def project = ProjectBuilder.builder().withProjectDir(repo.dir).build()
-            new VersioningPlugin().apply(project)
-            project.versioning {
-                parseVersionNumber = { SCMInfo scmInfo, String versionReleaseType, String versionBranchId,
-                                       String versionFull, String versionBase, String versionDisplay ->
-
-                    return new VersionNumber(1, 2, 3, 'toto', 4, 'tata')
-                }
-            }
-            VersionInfo info = project.versioning.info as VersionInfo
-            assert info != null
-            assert info.build == headAbbreviated
-            assert info.branch == 'release/2.0'
-            assert info.base == '2.0'
-            assert info.branchId == 'release-2.0'
-            assert info.branchType == 'release'
-            assert info.commit == head
-            assert info.display == '2.0.11'
-            assert info.full == "release-2.0-${headAbbreviated}" as String
-            assert info.scm == 'git'
-            assert info.tag == '2.0.10'
-            assert !info.dirty
-            assert info.versionNumber.versionCode == 4
 
         } finally {
             repo.close()
