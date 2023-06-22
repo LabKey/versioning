@@ -1,1 +1,2 @@
 // Empty settings file to allow wrapper to be used within this psuedo sub-prject
+rootProject.name="versioning"
