@@ -313,7 +313,7 @@ class VersioningExtension {
                 throw new DirtyException()
             } else {
                 if (!noWarningOnDirty) {
-                    project.getLogger().warn("[versioning] WARNING - the working copy has unstaged or uncommitted changes.")
+                    project.getLogger().warn("[versioning] WARNING - the working copy for ${project.path} has unstaged or uncommitted changes.")
                 }
                 versionDisplay = dirty(versionDisplay)
                 versionFull = dirty(versionFull)
