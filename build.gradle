@@ -78,12 +78,5 @@ publishing {
 
         }
     }
-    publications {
-        maven(MavenPublication) {
-            groupId = 'org.labkey.build'
-            artifactId = 'versioning'
-            from components.java
-        }
-    }
 }
 
