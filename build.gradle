@@ -36,7 +36,7 @@ dependencies {
 }
 
 group = 'org.labkey.build'
-project.version = "1.1.3-gradle9-SNAPSHOT"
+project.version = "1.1.4-SNAPSHOT"
 
 gradlePlugin {
     plugins {
